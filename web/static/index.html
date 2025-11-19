@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Service - Track Your Order</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">OrderTracker</h1>
+                <p class="tagline">Отслеживание заказов в реальном времени</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="search-section">
+                <div class="search-card">
+                    <h2>🔍 Найдите ваш заказ</h2>
+                    <p class="search-description">Введите ID заказа для получения детальной информации</p>
+                    
+                    <div class="search-form">
+                        <input 
+                            type="text" 
+                            id="orderId" 
+                            placeholder="Например: b563feb7b2b84b6test"
+                            class="search-input"
+                        >
+                        <button onclick="searchOrder()" class="search-button">
+                            Найти заказ
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="results" class="results-section hidden">
+                <div class="order-card">
+                    <div class="order-header">
+                        <h3>📦 Информация о заказе</h3>
+                    </div>
+                    
+                    <div class="order-content">
+                        <div class="info-section">
+                            <h4>ID заказа</h4>
+                            <div class="info-grid">
+                                <div class="info-item full-width">
+                                    <span class="info-value" id="orderIdDisplay"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h4>Основная информация</h4>
+                            <div class="info-grid" id="basicInfo">
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h4>🚚 Доставка</h4>
+                            <div class="info-grid" id="deliveryInfo">
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h4>💳 Оплата</h4>
+                            <div class="info-grid" id="paymentInfo">
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h4>🛍️ Товары в заказе</h4>
+                            <div class="items-list" id="itemsList">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div id="loading" class="loading hidden">
+                <div class="loading-spinner"></div>
+                <p>Ищем информацию о заказе...</p>
+            </div>
+
+            <div id="error" class="error-card hidden">
+                <div class="error-icon">⚠️</div>
+                <h3>Заказ не найден</h3>
+                <p id="errorMessage">Проверьте правильность введенного ID заказа</p>
+                <button onclick="retrySearch()" class="retry-button">Попробовать снова</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
