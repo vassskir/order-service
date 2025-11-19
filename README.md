@@ -42,6 +42,7 @@ go run cmd/producer/main.go
 open http://localhost:8081
 ```
 ### 2. Структура проекта
+```bash
 L0/
 ├── cmd/
 │   ├── server/          #Основное приложение
@@ -58,7 +59,7 @@ L0/
 ├── web/static/          #Веб-интерфейс
 └── .env.example         #Пример конфигурации
 
-
+```
 
 ### 3. Стек
 Go 
