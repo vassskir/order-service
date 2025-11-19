@@ -40,8 +40,8 @@ go run cmd/producer/main.go
 
 #Доступ к веб-интерфейсу
 open http://localhost:8081
-
-#Структура проекта
+```
+### 2. Структура проекта
 L0/
 ├── cmd/
 │   ├── server/          #Основное приложение
@@ -58,7 +58,9 @@ L0/
 ├── web/static/          #Веб-интерфейс
 └── .env.example         #Пример конфигурации
 
-#Стек
+
+
+### 3. Стек
 Go 
 PostgreSQL
 Kafka 
