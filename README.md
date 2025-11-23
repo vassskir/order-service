@@ -38,26 +38,32 @@ go run cmd/server/main.go
 #Отправка тестового заказа
 go run cmd/producer/main.go
 
+#M заказов с интервалом N секунд
+go run cmd/producer/main.go -count M -interval Ns
+
 #Доступ к веб-интерфейсу
 open http://localhost:8081
 ```
 ### 2. Структура проекта
 ```bash
 L0/
+L0/
 ├── cmd/
-│   ├── server/          #Основное приложение
-│   └── producer/        #Эмулятор отправки заказов
+│   ├── server/          # Основное приложение
+│   └── producer/        # Эмулятор отправки заказов
 ├── internal/
-│   ├── cache/           #In-memory кэш
-│   ├── config/          #Конфигурация
-│   ├── kafka/           #Kafka consumer
-│   ├── models/          #Модели данных
-│   ├── repository/      #Работа с БД
-│   ├── validation/      #Валидация данных
-│   └── interfaces/      #Интерфейсы
-├── migrations/          #SQL миграции
-├── web/static/          #Веб-интерфейс
-└── .env.example         #Пример конфигурации
+│   ├── cache/           # In-memory кэш
+│   ├── config/          # Конфигурация
+│   ├── kafka/           # Kafka consumer
+│   ├── models/          # Модели данных
+│   ├── repository/      # Работа с БД
+│   ├── validation/      # Валидация данных
+│   ├── interfaces/      # Интерфейсы
+│   ├── logger/          # Логирование
+│   └── retry/           # Механизм повторных попыток
+├── migrations/          # SQL миграции
+├── web/static/          # Веб-интерфейс
+└── .env.example         # Пример конфигурации
 
 ```
 

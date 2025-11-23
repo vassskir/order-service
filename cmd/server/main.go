@@ -15,6 +15,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func main() {
@@ -29,10 +33,10 @@ func main() {
 
 	ctx := context.Background()
 	err := retry.Retry(ctx, "initialize_database", retry.RetryConfig{
-		MaxAttempts: 5,
+		MaxAttempts:  5,
 		InitialDelay: 2 * time.Second,
-		MaxDelay: 30 * time.Second,
-		Multiplier: 2.0,
+		MaxDelay:     30 * time.Second,
+		Multiplier:   2.0,
 	}, func() error {
 		repo, repoErr = repository.NewPostgresRepository(&cfg.Database)
 		return repoErr
@@ -43,8 +47,19 @@ func main() {
 		os.Exit(1)
 	}
 	defer repo.Close()
-	
+
 	logger.Info("Database repository initialized")
+
+	m, err := migrate.New("file://migrations", cfg.Database.GetDBConnectionString())
+	if err != nil {
+		logger.Error("Failed to create migration", err)
+	} else {
+		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+			logger.Error("Failed to apply migrations", err)
+		} else {
+			logger.Info("Database migrations applied")
+		}
+	}
 
 	orderCache := cache.New()
 	defer orderCache.Stop()

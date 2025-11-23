@@ -9,7 +9,7 @@ import (
 )
 
 type RetryConfig struct {
-	MaxAttempts int
+	MaxAttempts  int
 	InitialDelay time.Duration
 	MaxDelay     time.Duration
 	Multiplier   float64
@@ -35,28 +35,28 @@ func Retry(ctx context.Context, operationName string, config RetryConfig, operat
 			}
 			return nil
 		}
-		
+
 		lastErr = err
-		
+
 		if attempt == config.MaxAttempts {
 			break
 		}
-		
+
 		delay := calculateDelay(config, attempt)
-		
+
 		logger.Warn("Operation failed, retrying", map[string]interface{}{
-			"operation": operationName,
-			"attempt":   attempt,
+			"operation":    operationName,
+			"attempt":      attempt,
 			"max_attempts": config.MaxAttempts,
-			"delay":       delay.String(),
-			"error":       err.Error(),
+			"delay":        delay.String(),
+			"error":        err.Error(),
 		})
-		
+
 		if !sleepWithContext(ctx, delay) {
 			return fmt.Errorf("operation cancelled: %w", lastErr)
 		}
 	}
-	
+
 	return fmt.Errorf("operation failed after %d attempts: %w", config.MaxAttempts, lastErr)
 }
 
@@ -74,7 +74,7 @@ func calculateDelay(config RetryConfig, attempt int) time.Duration {
 func sleepWithContext(ctx context.Context, delay time.Duration) bool {
 	timer := time.NewTimer(delay)
 	defer timer.Stop()
-	
+
 	select {
 	case <-timer.C:
 		return true

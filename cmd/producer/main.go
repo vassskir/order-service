@@ -3,13 +3,17 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"github.com/jaswdr/faker"
 	"github.com/segmentio/kafka-go"
 )
-
 
 type Order struct {
 	OrderUID          string    `json:"order_uid"`
@@ -66,86 +70,150 @@ type Item struct {
 }
 
 func main() {
-	brokers := []string{"localhost:9092"}
-	topic := "orders"
+	interval := flag.Duration("interval", 10*time.Second, "Interval between order generation")
+	count := flag.Int("count", 1, "Number of orders to generate (0 for continuous)")
+	brokers := flag.String("brokers", "localhost:9092", "Kafka brokers (comma separated)")
+	topic := flag.String("topic", "orders", "Kafka topic")
+	flag.Parse()
 
-	writer := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: brokers,
-		Topic:   topic,
-	})
+	brokersList := []string{*brokers}
+
+	writer := &kafka.Writer{
+		Addr:                   kafka.TCP(brokersList...),
+		Topic:                  *topic,
+		Balancer:               &kafka.LeastBytes{},
+		AllowAutoTopicCreation: true,
+	}
 	defer writer.Close()
 
-	order := createTestOrder()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	jsonData, err := json.Marshal(order)
-	if err != nil {
-		log.Fatalf("Failed to marshal order: %v", err)
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+		<-sigChan
+		log.Println("Received shutdown signal")
+		cancel()
+	}()
+
+	fake := faker.New()
+	ticker := time.NewTicker(*interval)
+	defer ticker.Stop()
+
+	ordersGenerated := 0
+	log.Printf("Starting order producer (interval: %v, count: %d)", *interval, *count)
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Producer stopped")
+			return
+		case <-ticker.C:
+			if *count > 0 && ordersGenerated >= *count {
+				log.Printf("Generated %d orders, stopping", *count)
+				return
+			}
+
+			order := generateTestOrder(fake)
+			jsonData, err := json.Marshal(order)
+			if err != nil {
+				log.Printf("Failed to marshal order: %v", err)
+				continue
+			}
+
+			err = writer.WriteMessages(ctx,
+				kafka.Message{
+					Key:   []byte(order.OrderUID),
+					Value: jsonData,
+				},
+			)
+			if err != nil {
+				log.Printf("Failed to write message: %v", err)
+				continue
+			}
+
+			ordersGenerated++
+			fmt.Printf("Order #%d sent: %s\n", ordersGenerated, order.OrderUID)
+			fmt.Printf("Track: %s, Customer: %s\n", order.TrackNumber, order.Delivery.Name)
+			fmt.Printf("Amount: %d %s, Items: %d\n", order.Payment.Amount, order.Payment.Currency, len(order.Items))
+			fmt.Println("---")
+		}
 	}
-
-	err = writer.WriteMessages(context.Background(),
-		kafka.Message{
-			Key:   []byte(order.OrderUID),
-			Value: jsonData,
-		},
-	)
-	if err != nil {
-		log.Fatalf("Failed to write message: %v", err)
-	}
-
-	fmt.Printf("✅ Order sent to Kafka: %s\n", order.OrderUID)
-	fmt.Printf("📦 Track number: %s\n", order.TrackNumber)
-	fmt.Printf("👤 Customer: %s\n", order.Delivery.Name)
 }
 
-func createTestOrder() Order {
-	now := time.Now()
-	order := Order{
-		OrderUID:          fmt.Sprintf("test-order-%d", now.Unix()),
-		TrackNumber:       "WBILMTESTTRACK",
+func generateTestOrder(fake faker.Faker) Order {
+	orderUID := fake.UUID().V4()
+	orderTrackNumber := "WBIL" + fake.UUID().V4()[:8]
+
+	delivery := Delivery{
+		Name:    fake.Person().Name(),
+		Phone:   "+" + fake.Numerify("###########"),
+		Zip:     fake.Address().PostCode(),
+		City:    fake.Address().City(),
+		Address: fake.Address().Address(),
+		Region:  fake.Address().State(),
+		Email:   fake.Internet().Email(),
+	}
+
+	amount := fake.IntBetween(1000, 100000)
+
+	// Фиксируем список валют которые проходят валидацию
+	currencies := []string{"USD", "EUR", "RUB", "GBP", "JPY"}
+
+	payment := Payment{
+		Transaction:  orderUID,
+		RequestID:    fake.UUID().V4(),
+		Currency:     currencies[fake.IntBetween(0, len(currencies)-1)], // Используем фиксированные валюты
+		Provider:     fake.Company().Name(),
+		Amount:       amount,
+		PaymentDt:    time.Now().Unix(),
+		Bank:         fake.Company().Name(),
+		DeliveryCost: fake.IntBetween(500, 5000),
+		GoodsTotal:   amount - fake.IntBetween(100, 1000),
+		CustomFee:    fake.IntBetween(0, 500),
+	}
+
+	sizes := []string{"S", "M", "L", "XL", "0"}
+	locales := []string{"en", "ru"}
+	deliveryServices := []string{"meest", "russianpost", "dhl", "fedex"}
+
+	var items []Item
+	numItems := fake.IntBetween(1, 3)
+	for i := 0; i < numItems; i++ {
+		price := fake.IntBetween(100, 5000)
+		sale := fake.IntBetween(0, 50)
+
+		item := Item{
+			ChrtID:      fake.Int64(),
+			TrackNumber: orderTrackNumber,
+			Price:       price,
+			Rid:         fake.UUID().V4(),
+			Name:        "Product " + fake.Lorem().Word(),
+			Sale:        sale,
+			Size:        sizes[fake.IntBetween(0, len(sizes)-1)],
+			TotalPrice:  price - (price * sale / 100),
+			NmID:        fake.Int64(),
+			Brand:       fake.Company().Name(),
+			Status:      fake.IntBetween(200, 204),
+		}
+		items = append(items, item)
+	}
+
+	return Order{
+		OrderUID:          orderUID,
+		TrackNumber:       orderTrackNumber,
 		Entry:             "WBIL",
-		Locale:            "en",
+		Delivery:          delivery,
+		Payment:           payment,
+		Items:             items,
+		Locale:            locales[fake.IntBetween(0, len(locales)-1)],
 		InternalSignature: "",
-		CustomerID:        "test-customer",
-		DeliveryService:   "meest",
-		Shardkey:          "9",
-		SmID:              99,
-		DateCreated:       now,
-		OofShard:          "1",
+		CustomerID:        fake.UUID().V4(),
+		DeliveryService:   deliveryServices[fake.IntBetween(0, len(deliveryServices)-1)],
+		Shardkey:          fmt.Sprintf("%d", fake.IntBetween(1, 10)),
+		SmID:              fake.IntBetween(1, 100),
+		DateCreated:       time.Now(),
+		OofShard:          fmt.Sprintf("%d", fake.IntBetween(1, 5)),
 	}
-
-	order.Delivery.Name = "Test Testov"
-	order.Delivery.Phone = "+9720000000"
-	order.Delivery.Zip = "2639809"
-	order.Delivery.City = "Kiryat Mozkin"
-	order.Delivery.Address = "Ploshad Mira 15"
-	order.Delivery.Region = "Kraiot"
-	order.Delivery.Email = "test@gmail.com"
-
-	order.Payment.Transaction = order.OrderUID
-	order.Payment.RequestID = ""
-	order.Payment.Currency = "USD"
-	order.Payment.Provider = "wbpay"
-	order.Payment.Amount = 1817
-	order.Payment.PaymentDt = now.Unix()
-	order.Payment.Bank = "alpha"
-	order.Payment.DeliveryCost = 1500
-	order.Payment.GoodsTotal = 317
-	order.Payment.CustomFee = 0
-
-	order.Items = []Item{
-		{
-			ChrtID:      9934930,
-			TrackNumber: order.TrackNumber,
-			Price:       453,
-			Rid:         "ab4219087a764ae0btest",
-			Name:        "Mascaras",
-			Sale:        30,
-			Size:        "0",
-			TotalPrice:  317,
-			NmID:        2389212,
-			Brand:       "Vivienne Sabo",
-			Status:      202,
-		},
-	}
-	return order
 }

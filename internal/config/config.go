@@ -25,9 +25,9 @@ type DatabaseConfig struct {
 }
 
 type KafkaConfig struct {
-	Brokers  []string
-	Topic    string
-	GroupID  string
+	Brokers []string
+	Topic   string
+	GroupID string
 }
 
 type ServerConfig struct {
@@ -40,20 +40,20 @@ type LoggingConfig struct {
 
 func Load() *Config {
 	_ = godotenv.Load()
-	
+
 	return &Config{
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),
-			User:     getEnv("DB_USER", ""), 
+			User:     getEnv("DB_USER", ""),
 			Password: getEnv("DB_PASSWORD", ""),
 			DBName:   getEnv("DB_NAME", ""),
 			SSLMode:  getEnv("DB_SSL_MODE", "disable"),
 		},
 		Kafka: KafkaConfig{
-			Brokers:  getEnvAsSlice("KAFKA_BROKERS", []string{"localhost:9092"}, ","),
-			Topic:    getEnv("KAFKA_TOPIC", "orders"),
-			GroupID:  getEnv("KAFKA_GROUP_ID", "order-service"),
+			Brokers: getEnvAsSlice("KAFKA_BROKERS", []string{"localhost:9092"}, ","),
+			Topic:   getEnv("KAFKA_TOPIC", "orders"),
+			GroupID: getEnv("KAFKA_GROUP_ID", "order-service"),
 		},
 		Server: ServerConfig{
 			Port: getEnv("SERVER_PORT", "8080"),
@@ -80,8 +80,8 @@ func getEnvAsSlice(key string, defaultSlice []string, sep string) []string {
 }
 
 func (c *DatabaseConfig) GetDBConnectionString() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		c.Host, c.Port, c.User, c.Password, c.DBName, c.SSLMode)
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		c.User, c.Password, c.Host, c.Port, c.DBName, c.SSLMode)
 }
 
 func (c *Config) Validate() error {

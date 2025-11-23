@@ -10,12 +10,12 @@ import (
 var _ interfaces.OrderCache = (*Cache)(nil)
 
 type Cache struct {
-	mu             sync.RWMutex
-	orders         map[string]*cacheEntry
-	maxSize        int
-	defaultTTL     time.Duration
+	mu              sync.RWMutex
+	orders          map[string]*cacheEntry
+	maxSize         int
+	defaultTTL      time.Duration
 	cleanupInterval time.Duration
-	stopCleanup    chan struct{}
+	stopCleanup     chan struct{}
 }
 
 type cacheEntry struct {
@@ -27,9 +27,9 @@ type cacheEntry struct {
 func New() *Cache {
 	c := &Cache{
 		orders:          make(map[string]*cacheEntry),
-		maxSize:         1000,           
-		defaultTTL:      24 * time.Hour, 
-		cleanupInterval: 1 * time.Hour,  
+		maxSize:         1000,
+		defaultTTL:      24 * time.Hour,
+		cleanupInterval: 1 * time.Hour,
 		stopCleanup:     make(chan struct{}),
 	}
 

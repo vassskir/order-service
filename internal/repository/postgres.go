@@ -22,7 +22,7 @@ type PostgresRepository struct {
 
 func NewPostgresRepository(cfg *config.DatabaseConfig) (*PostgresRepository, error) {
 	connStr := cfg.GetDBConnectionString()
-	
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
@@ -30,7 +30,7 @@ func NewPostgresRepository(cfg *config.DatabaseConfig) (*PostgresRepository, err
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	if err := db.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
@@ -59,7 +59,7 @@ func (r *PostgresRepository) SaveOrder(order *models.Order) error {
 			customer_id, delivery_service, shardkey, sm_id, date_created, oof_shard)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		ON CONFLICT (order_uid) DO NOTHING`,
-		order.OrderUID, order.TrackNumber, order.Entry, order.Locale, 
+		order.OrderUID, order.TrackNumber, order.Entry, order.Locale,
 		order.InternalSignature, order.CustomerID, order.DeliveryService,
 		order.Shardkey, order.SmID, order.DateCreated, order.OofShard,
 	)
@@ -115,7 +115,7 @@ func (r *PostgresRepository) SaveOrder(order *models.Order) error {
 
 func (r *PostgresRepository) GetOrderByUID(orderUID string) (*models.Order, error) {
 	var order models.Order
-	
+
 	err := r.db.QueryRow(`
 		SELECT order_uid, track_number, entry, locale, internal_signature,
 			   customer_id, delivery_service, shardkey, sm_id, date_created, oof_shard

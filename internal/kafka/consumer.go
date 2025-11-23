@@ -16,12 +16,12 @@ import (
 )
 
 type Consumer struct {
-	reader    *kafka.Reader
-	repo      interfaces.OrderRepository
-	cache     interfaces.OrderCache
-	topic     string
-	groupID   string
-	brokers   []string
+	reader  *kafka.Reader
+	repo    interfaces.OrderRepository
+	cache   interfaces.OrderCache
+	topic   string
+	groupID string
+	brokers []string
 }
 
 func NewConsumer(brokers []string, topic string, groupID string, repo interfaces.OrderRepository, cache interfaces.OrderCache) *Consumer {
@@ -29,8 +29,8 @@ func NewConsumer(brokers []string, topic string, groupID string, repo interfaces
 		Brokers:        brokers,
 		Topic:          topic,
 		GroupID:        groupID,
-		MinBytes:       10e3, 
-		MaxBytes:       10e6, 
+		MinBytes:       10e3,
+		MaxBytes:       10e6,
 		CommitInterval: time.Second,
 		StartOffset:    kafka.FirstOffset,
 	})
@@ -101,7 +101,7 @@ func (c *Consumer) handleOrderMessage(data []byte) error {
 	err := retry.Retry(ctx, "save_order_to_db", retry.DefaultConfig, func() error {
 		return c.repo.SaveOrder(&order)
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to save order to database after retries: %w", err)
 	}

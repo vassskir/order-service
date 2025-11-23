@@ -21,15 +21,14 @@ var (
 	errorLogger *log.Logger
 	warnLogger  *log.Logger
 	serviceName string
-	prettyPrint bool 
+	prettyPrint bool
 )
-
 
 func Init(service string) {
 	serviceName = service
-	
+
 	prettyPrint = os.Getenv("LOG_PRETTY") == "true"
-	
+
 	infoLogger = log.New(os.Stdout, "", 0)
 	errorLogger = log.New(os.Stderr, "", 0)
 	warnLogger = log.New(os.Stdout, "", 0)
@@ -73,13 +72,13 @@ func prettyLog(level, message string, data interface{}, err error) {
 	var color string
 	switch level {
 	case "ERROR":
-		color = "🔴" 
+		color = "🔴"
 	case "WARN":
-		color = "🟡" 
+		color = "🟡"
 	case "INFO":
-		color = "🔵" 
+		color = "🔵"
 	default:
-		color = "⚪" 
+		color = "⚪"
 	}
 
 	log.Printf("%s [%s] %s", color, level, message)

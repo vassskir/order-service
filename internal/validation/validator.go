@@ -14,7 +14,7 @@ var validate *validator.Validate
 
 func init() {
 	validate = validator.New()
-	
+
 	validate.RegisterValidation("phone", validatePhone)
 	validate.RegisterValidation("track_number", validateTrackNumber)
 }
@@ -32,7 +32,7 @@ func ValidateOrder(order *models.Order) error {
 
 func validatePhone(fl validator.FieldLevel) bool {
 	phone := fl.Field().String()
-	
+
 	phoneRegex := `^\+?[1-9]\d{1,14}$`
 	matched, _ := regexp.MatchString(phoneRegex, phone)
 	return matched
@@ -40,11 +40,11 @@ func validatePhone(fl validator.FieldLevel) bool {
 
 func validateTrackNumber(fl validator.FieldLevel) bool {
 	trackNumber := fl.Field().String()
-	
+
 	if len(trackNumber) == 0 || len(trackNumber) > 50 {
 		return false
 	}
-	
+
 	validChars := regexp.MustCompile(`^[a-zA-Z0-9\-_]+$`)
 	return validChars.MatchString(trackNumber)
 }
@@ -63,7 +63,7 @@ func validateOrderRelations(order *models.Order) error {
 	if order.DateCreated.After(time.Now().Add(24 * time.Hour)) {
 		return fmt.Errorf("order date cannot be in the future")
 	}
-	
+
 	if order.DateCreated.Before(time.Now().Add(-365 * 24 * time.Hour)) {
 		return fmt.Errorf("order date is too far in the past")
 	}
